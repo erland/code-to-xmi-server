@@ -1,20 +1,19 @@
-# Release image: includes built frontend-to-ir in /deps/frontend-to-ir
-FROM node:20-bookworm AS frontend_builder
+# Release image: includes prebuilt frontend-to-ir dist (built in CI on the runner)
+#
+# Rationale: building frontend-to-ir inside Docker (npm ci/install with dev deps)
+# has proven flaky in CI with npm occasionally crashing ("Exit handler never called!").
+# Instead, CI builds deps/frontend-to-ir/dist on the runner, and the Docker build
+# only installs runtime deps (--omit=dev) and copies the prebuilt dist.
+
+FROM node:20-bookworm AS frontend_runtime
 WORKDIR /deps/frontend-to-ir
 
-# npm can be flaky in CI during `npm ci` for large dependency graphs; for the
-# builder stage we prioritize robustness (we only need the compiled dist/).
-ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
-    NPM_CONFIG_AUDIT=false \
-    NPM_CONFIG_FUND=false \
-    NPM_CONFIG_PROGRESS=false
+# Install runtime deps for frontend-to-ir (dist is copied separately)
+COPY deps/frontend-to-ir/package.json deps/frontend-to-ir/package-lock.json* ./
+RUN npm ci --omit=dev --no-audit --no-fund
 
-# Copy the full repo first so installs resolve exactly as in the dependency
-# project, then install dev deps (tsc) and build.
-COPY deps/frontend-to-ir ./
-RUN npm install --include=dev --no-audit --no-fund
-RUN test -x node_modules/.bin/tsc
-RUN npm run build
+# Copy prebuilt dist (must exist in build context)
+COPY deps/frontend-to-ir/dist ./dist
 
 FROM node:20-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -23,8 +22,8 @@ COPY services/ir-service/package.json services/ir-service/package-lock.json* ./
 RUN npm ci --omit=dev
 COPY services/ir-service/src ./src
 
-# Copy built frontend-to-ir (dist + node_modules)
-COPY --from=frontend_builder /deps/frontend-to-ir /deps/frontend-to-ir
+# Copy frontend-to-ir runtime (dist + node_modules)
+COPY --from=frontend_runtime /deps/frontend-to-ir /deps/frontend-to-ir
 ENV FRONTEND_TO_IR_CLI=/deps/frontend-to-ir/dist/cli.js
 
 EXPOSE 7071

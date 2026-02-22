@@ -44,6 +44,23 @@ jobs:
           ref: ${{ steps.deps.outputs.java_ref }}
           path: deps/java-to-xmi
 
+      # Build frontend-to-ir on the runner (avoids flaky npm inside Docker build)
+      - name: Set up Node
+        if: ${{ matrix.service == 'ir-service' }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: deps/frontend-to-ir/package-lock.json
+
+      - name: Build frontend-to-ir dist
+        if: ${{ matrix.service == 'ir-service' }}
+        working-directory: deps/frontend-to-ir
+        run: |
+          npm ci
+          npm run build
+          test -f dist/cli.js
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
