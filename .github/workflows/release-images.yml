@@ -49,16 +49,36 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: deps/frontend-to-ir/package-lock.json
 
       - name: Build frontend-to-ir dist
         if: ${{ matrix.service == 'ir-service' }}
         working-directory: deps/frontend-to-ir
         run: |
-          npm ci
+          node --version
+          npm --version
+          # Pin npm to the version bundled with Node 20 for stability
+          npm i -g npm@10.8.2
+          npm --version
+          export NODE_ENV=development
+          export NPM_CONFIG_PRODUCTION=false
+          export NPM_CONFIG_UPDATE_NOTIFIER=false
+          export NPM_CONFIG_AUDIT=false
+          export NPM_CONFIG_FUND=false
+          export NPM_CONFIG_PROGRESS=false
+          # Install with a simple retry; npm occasionally flakes in CI
+          rm -rf node_modules
+          for i in 1 2; do
+            echo "npm install attempt $i"
+            npm ci --include=dev --no-audit --no-fund && break
+            npm cache clean --force || true
+            rm -rf node_modules
+          done
+          test -x node_modules/.bin/tsc
           npm run build
           test -f dist/cli.js
+          # Prune dev deps so Docker image can copy runtime node_modules without running npm
+          npm prune --omit=dev
+          test ! -d node_modules/typescript || (echo "typescript still present after prune" && exit 1)
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
