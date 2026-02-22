@@ -27,6 +27,19 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
     const language = (req.body.language || "").toLowerCase();
     if (!language) return res.status(400).json({ error: "Missing field: language" });
 
+    // Normalize a few legacy UI values to the current java-to-xmi CLI surface.
+    // This keeps older frontends / cached pages working.
+    if (typeof req.body.associations === "string") {
+      const a = req.body.associations.trim().toLowerCase();
+      if (a === "basic") req.body.associations = "resolved";
+      if (a === "all") req.body.associations = "smart";
+    }
+    if (typeof req.body.deps === "string") {
+      const d = req.body.deps.trim().toLowerCase();
+      if (d === "none") req.body.deps = "false";
+      if (d === "calls" || d === "all") req.body.deps = "true";
+    }
+
     // forward common options
     const pass = new URLSearchParams();
     const passKeys = [

@@ -75,11 +75,11 @@
         <div>
           <label for="associations">Associations</label>
           <select id="associations" name="associations">
-            <option value="">(default)</option>
+            <option value="">(default: resolved)</option>
             <option value="none">none</option>
-            <option value="basic">basic</option>
+            <option value="resolved">resolved</option>
             <option value="jpa">jpa</option>
-            <option value="all">all</option>
+            <option value="smart">smart</option>
           </select>
         </div>
       </div>
@@ -88,10 +88,9 @@
         <div>
           <label for="deps">Deps</label>
           <select id="deps" name="deps">
-            <option value="">(default)</option>
-            <option value="none">none</option>
-            <option value="calls">calls</option>
-            <option value="all">all</option>
+            <option value="">(default: false)</option>
+            <option value="false">false</option>
+            <option value="true">true</option>
           </select>
         </div>
         <div>
