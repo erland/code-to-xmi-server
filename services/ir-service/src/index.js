@@ -34,8 +34,12 @@ app.post("/v1/ir", upload.single("inputZip"), async (req, res) => {
     await fs.promises.mkdir(outDir, { recursive: true });
     const outFile = path.join(outDir, "model.ir.json");
 
-    // Run: node <cli.js> extract --mode <mode> --project <dir> --out <file>
-    await execOrThrow("node", [CLI, "extract", "--mode", mode, "--project", projectDir, "--out", outFile], {
+    // frontend-to-ir CLI has no "extract" subcommand; extraction is the default action.
+    // It expects --source and --out, and uses --framework auto|react|angular|none.
+    const framework = (mode === "react" || mode === "angular") ? mode : "none";
+
+    // Run: node <cli.js> --framework <framework> --source <dir> --out <file>
+    await execOrThrow("node", [CLI, "--framework", framework, "--source", projectDir, "--out", outFile], {
       timeoutMs: 5 * 60_000,
     });
 

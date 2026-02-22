@@ -1,11 +1,24 @@
 import express from "express";
 import multer from "multer";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 const upload = multer({ limits: { fileSize: 200 * 1024 * 1024 } }); // 200MB
 
 const IR_SERVICE_URL = process.env.IR_SERVICE_URL || "http://localhost:7071";
 const XMI_SERVICE_URL = process.env.XMI_SERVICE_URL || "http://localhost:7072";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Simple UI + static assets (open http://localhost:8080/)
+app.use(express.static(path.join(__dirname, "..", "public")));
+
+// Explicit root route as a fallback (some proxies/CDNs can interfere with express.static index lookup)
+app.get("/", (_req, res) => {
+  res.sendFile(path.join(__dirname, "..", "public", "index.html"));
+});
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 

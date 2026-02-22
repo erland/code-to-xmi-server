@@ -110,3 +110,67 @@ export async function execOrThrow(cmd, args, opts) {
     });
   });
 }
+
+/**
+ * Tries to locate the java-to-xmi CLI jar in common build output locations.
+ * This avoids hardcoding a single path since java-to-xmi is now a multi-module build.
+ *
+ * @param {string=} explicitPath
+ * @returns {Promise<string>}
+ */
+export async function resolveJavaToXmiJar(explicitPath) {
+  const candidates = [];
+
+  if (explicitPath) candidates.push(explicitPath);
+
+  // Historical single-module path
+  candidates.push("/deps/java-to-xmi/target/java-to-xmi.jar");
+
+  // Multi-module path (recommended)
+  candidates.push("/deps/java-to-xmi/java-to-xmi-cli/target/java-to-xmi-cli-0.1.0-SNAPSHOT.jar");
+
+  // Generic multi-module glob candidates
+  const globDirs = [
+    "/deps/java-to-xmi/java-to-xmi-cli/target",
+    "/deps/java-to-xmi/target",
+  ];
+
+  for (const p of candidates) {
+    try {
+      const st = await fs.promises.stat(p);
+      if (st.isFile()) return p;
+    } catch {
+      // ignore
+    }
+  }
+
+  // Try to pick the newest jar in the known target folders
+  for (const dir of globDirs) {
+    try {
+      const entries = await fs.promises.readdir(dir, { withFileTypes: true });
+      const jars = [];
+      for (const e of entries) {
+        if (!e.isFile()) continue;
+        if (!e.name.endsWith(".jar")) continue;
+        const full = path.join(dir, e.name);
+        const st = await fs.promises.stat(full);
+        jars.push({ full, mtimeMs: st.mtimeMs });
+      }
+      jars.sort((a, b) => b.mtimeMs - a.mtimeMs);
+      const best = jars.find((j) => j.full.includes("java-to-xmi"));
+      if (best) return best.full;
+    } catch {
+      // ignore
+    }
+  }
+
+  throw new Error(
+    [
+      "Unable to locate java-to-xmi CLI jar.",
+      "Expected one of:",
+      "- /deps/java-to-xmi/target/*.jar",
+      "- /deps/java-to-xmi/java-to-xmi-cli/target/*.jar",
+      "Build the project (e.g. mvn -q -DskipTests package) in your java-to-xmi repo, then restart containers.",
+    ].join("\n")
+  );
+}

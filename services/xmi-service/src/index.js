@@ -2,18 +2,19 @@ import express from "express";
 import multer from "multer";
 import fs from "node:fs";
 import path from "node:path";
-import { makeWorkdir, unzipSafe, gitClone, execOrThrow } from "./utils.js";
+import { makeWorkdir, unzipSafe, gitClone, execOrThrow, resolveJavaToXmiJar } from "./utils.js";
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 300 * 1024 * 1024 } });
 
-const JAR = process.env.JAVA_TO_XMI_JAR || "/deps/java-to-xmi/target/java-to-xmi.jar";
+const JAR_ENV = process.env.JAVA_TO_XMI_JAR;
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
   const wd = await makeWorkdir("xmi");
   try {
+    const JAR = await resolveJavaToXmiJar(JAR_ENV);
     const irJson = req.body.irJson;
     const language = (req.body.language || "").toLowerCase();
     const repoUrl = req.body.repoUrl;

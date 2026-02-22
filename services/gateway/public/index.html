@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Code → UML XMI</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 24px; max-width: 860px; }
+    h1 { margin: 0 0 8px; font-size: 22px; }
+    p { margin: 0 0 16px; opacity: 0.85; }
+    fieldset { border: 1px solid rgba(127,127,127,0.35); border-radius: 10px; padding: 14px 16px; margin: 0 0 14px; }
+    legend { padding: 0 6px; }
+    label { display: block; margin: 10px 0 6px; font-weight: 600; }
+    input[type="text"], select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(127,127,127,0.35); }
+    input[type="file"] { width: 100%; }
+    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .actions { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
+    button { padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,0.35); cursor: pointer; }
+    button.primary { font-weight: 700; }
+    pre { white-space: pre-wrap; background: rgba(127,127,127,0.12); padding: 12px; border-radius: 10px; overflow: auto; }
+    .muted { opacity: 0.75; font-size: 13px; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <h1>Generate UML XMI</h1>
+  <p>Upload a zip or provide a Git repository URL, then download the generated UML XMI.</p>
+
+  <form id="form">
+    <fieldset>
+      <legend>Input</legend>
+
+      <div class="row">
+        <div>
+          <label for="language">Language</label>
+          <select id="language" name="language" required>
+            <option value="java">Java</option>
+            <option value="ts">TypeScript</option>
+            <option value="js">JavaScript</option>
+            <option value="react">React</option>
+            <option value="angular">Angular</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="name">Model name (optional)</label>
+          <input id="name" name="name" type="text" placeholder="MyModel" />
+        </div>
+      </div>
+
+      <label>Source</label>
+      <div>
+        <label style="font-weight:500;"><input type="radio" name="sourceKind" value="zip" checked /> Zip upload</label>
+        <div id="zipWrap" style="margin:8px 0 12px;">
+          <input id="inputZip" name="inputZip" type="file" accept=".zip" />
+          <div class="muted">The zip should contain your project at the root (or a single top-level folder).</div>
+        </div>
+
+        <label style="font-weight:500;"><input type="radio" name="sourceKind" value="repo" /> Git repository URL</label>
+        <div id="repoWrap" class="hidden" style="margin:8px 0 12px;">
+          <input id="repoUrl" name="repoUrl" type="text" placeholder="https://github.com/user/repo" />
+          <div class="muted">The server clones the repo with <code>--depth 1</code>.</div>
+        </div>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend>Advanced (optional)</legend>
+      <div class="row">
+        <div>
+          <label for="exclude">Exclude globs (comma-separated)</label>
+          <input id="exclude" name="exclude" type="text" placeholder="**/node_modules/**, **/dist/**" />
+        </div>
+        <div>
+          <label for="associations">Associations</label>
+          <select id="associations" name="associations">
+            <option value="">(default)</option>
+            <option value="none">none</option>
+            <option value="basic">basic</option>
+            <option value="jpa">jpa</option>
+            <option value="all">all</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <label for="deps">Deps</label>
+          <select id="deps" name="deps">
+            <option value="">(default)</option>
+            <option value="none">none</option>
+            <option value="calls">calls</option>
+            <option value="all">all</option>
+          </select>
+        </div>
+        <div>
+          <label for="noStereotypes">Stereotypes</label>
+          <select id="noStereotypes" name="noStereotypes">
+            <option value="">include</option>
+            <option value="true">exclude</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="muted">The advanced options are forwarded to the underlying tools where applicable.</div>
+    </fieldset>
+
+    <div class="actions">
+      <button class="primary" type="submit">Generate XMI</button>
+      <span id="status" class="muted"></span>
+    </div>
+
+    <div id="out" style="margin-top:14px;"></div>
+  </form>
+
+  <script src="/app.js"></script>
+</body>
+</html>
