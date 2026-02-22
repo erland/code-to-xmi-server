@@ -40,6 +40,8 @@ From `code-to-xmi-server/`:
 docker compose -f docker-compose.dev.yml up --build
 ```
 
+Gateway runs in watch mode in `docker-compose.dev.yml`, so changes under `services/gateway/src` and `services/gateway/public` are picked up automatically (no rebuild needed).
+
 Ports:
 - Gateway: http://localhost:8080
 - IR service: http://localhost:7071
@@ -110,7 +112,7 @@ Tag conventions:
 
 If you just want to run the latest **snapshot** or an **official release** without cloning any repositories, the easiest way is to use the published images.
 
-Create a new folder anywhere on your machine and add a `docker-compose.yml` like this (or copy `docker-compose.ghcr.yml` from this repo):
+Create a new folder anywhere on your machine and add a `docker-compose.yml` like this (or copy `docker-compose.ghcr.yml` from this repo). Using `pull_policy: always` ensures `:snapshot` refreshes on each `docker compose up`:
 
 ```yaml
 services:

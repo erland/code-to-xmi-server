@@ -1,6 +1,8 @@
 services:
   gateway:
     image: ghcr.io/erland/code-to-xmi-gateway:snapshot
+    pull_policy: always
+    restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
@@ -9,9 +11,31 @@ services:
     depends_on:
       - ir-service
       - xmi-service
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:8080/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   ir-service:
     image: ghcr.io/erland/code-to-xmi-ir-service:snapshot
+    pull_policy: always
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:7071/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
 
   xmi-service:
     image: ghcr.io/erland/code-to-xmi-xmi-service:snapshot
+    pull_policy: always
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:7072/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
