@@ -103,3 +103,51 @@ Tags:
 - `vX.Y.Z` and `latest` – release builds (from git tags)
 
 Release builds pin dependency refs via `deps.lock.json`.
+
+### Quick start (no source checkout)
+
+If you just want to run the latest **snapshot** or an **official release** without cloning any repositories, the easiest way is to use the published images.
+
+Create a new folder anywhere on your machine and add a `docker-compose.yml` like this:
+
+```yaml
+services:
+  gateway:
+    image: ghcr.io/erland/code-to-xmi-gateway:snapshot
+    ports:
+      - "8080:8080"
+    environment:
+      IR_SERVICE_URL: http://ir-service:7071
+      XMI_SERVICE_URL: http://xmi-service:7072
+    depends_on:
+      - ir-service
+      - xmi-service
+
+  ir-service:
+    image: ghcr.io/erland/code-to-xmi-ir-service:snapshot
+
+  xmi-service:
+    image: ghcr.io/erland/code-to-xmi-xmi-service:snapshot
+```
+
+Then run:
+
+```bash
+docker compose up
+```
+
+Open the UI:
+
+- http://localhost:8080/
+
+### Use a specific release
+
+Replace `snapshot` with a release tag, e.g. `v1.0.0` (and optionally use `latest` once you publish it):
+
+- `ghcr.io/erland/code-to-xmi-gateway:v1.0.0`
+- `ghcr.io/erland/code-to-xmi-ir-service:v1.0.0`
+- `ghcr.io/erland/code-to-xmi-xmi-service:v1.0.0`
+
+### Use a specific snapshot build
+
+If you want a snapshot tied to a particular server commit, use the `sha-<7>` tag (same tag across all three images).
