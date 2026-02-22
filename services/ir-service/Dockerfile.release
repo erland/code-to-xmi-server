@@ -1,10 +1,19 @@
 # Release image: includes built frontend-to-ir in /deps/frontend-to-ir
 FROM node:20-bookworm AS frontend_builder
 WORKDIR /deps/frontend-to-ir
-COPY deps/frontend-to-ir/package.json deps/frontend-to-ir/package-lock.json* ./
-RUN npm ci --include=dev --no-audit --no-fund
-RUN test -x node_modules/.bin/tsc
+
+# npm can be flaky in CI during `npm ci` for large dependency graphs; for the
+# builder stage we prioritize robustness (we only need the compiled dist/).
+ENV NPM_CONFIG_UPDATE_NOTIFIER=false \
+    NPM_CONFIG_AUDIT=false \
+    NPM_CONFIG_FUND=false \
+    NPM_CONFIG_PROGRESS=false
+
+# Copy the full repo first so installs resolve exactly as in the dependency
+# project, then install dev deps (tsc) and build.
 COPY deps/frontend-to-ir ./
+RUN npm install --include=dev --no-audit --no-fund
+RUN test -x node_modules/.bin/tsc
 RUN npm run build
 
 FROM node:20-bookworm
