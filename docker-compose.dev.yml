@@ -1,0 +1,32 @@
+services:
+  gateway:
+    build:
+      context: ./services/gateway
+    environment:
+      IR_SERVICE_URL: http://ir-service:7071
+      XMI_SERVICE_URL: http://xmi-service:7072
+    ports:
+      - "8080:8080"
+    depends_on:
+      - ir-service
+      - xmi-service
+
+  ir-service:
+    build:
+      context: ./services/ir-service
+    environment:
+      FRONTEND_TO_IR_CLI: /deps/frontend-to-ir/dist/cli.js
+    volumes:
+      - ../frontend-to-ir:/deps/frontend-to-ir:ro
+    ports:
+      - "7071:7071"
+
+  xmi-service:
+    build:
+      context: ./services/xmi-service
+    environment:
+      JAVA_TO_XMI_JAR: /deps/java-to-xmi/target/java-to-xmi.jar
+    volumes:
+      - ../java-to-xmi:/deps/java-to-xmi:ro
+    ports:
+      - "7072:7072"
