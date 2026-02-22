@@ -1,12 +1,12 @@
 # code-to-xmi-server
 
-Development-friendly example server that converts **source code ZIPs or repo URLs** into **UML XMI** by orchestrating your existing tools as **separate HTTP services**:
+Gateway (UI + API) that converts **source code ZIPs or repo URLs** into **UML XMI** by orchestrating two helper services:
 
-- `ir-service` (Node): uses `frontend-to-ir` CLI to produce **IR JSON**
-- `xmi-service` (Node + JRE): uses `java-to-xmi` CLI to produce **XMI**
-- `gateway` (Node): single public endpoint that orchestrates the pipeline
+- `ir-service` (Node, built in `frontend-to-ir` repo): produces **IR JSON**
+- `xmi-service` (Node + JRE, built in `java-to-xmi` repo): produces **XMI**
+- `gateway` (this repo): single public endpoint that orchestrates the pipeline
 
-Nothing is vendored. During development you run this repo **next to** the tool repos and mount them.
+Nothing is vendored. During development you run the repos side-by-side; `docker-compose.dev.yml` builds the helper services from their own repositories.
 
 ## Expected workspace layout
 
@@ -19,6 +19,8 @@ workspace/
   code-to-xmi-server/  # this repo
 ```
 
+
+> Note: This repository contains only the `gateway` service. The `ir-service` and `xmi-service` sources live in the `frontend-to-ir` and `java-to-xmi` repositories respectively.
 Build the tools once (on host):
 
 ```bash
@@ -90,25 +92,25 @@ Returns XMI.
 
 ## Snapshot and release images (GHCR)
 
-This repo can publish prebuilt Docker images for the three services to GitHub Container Registry (GHCR):
+For end users who just want to run the service (no source checkout), the easiest approach is to pull prebuilt images from GitHub Container Registry (GHCR).
 
-- `ghcr.io/erland/code-to-xmi-gateway`
-- `ghcr.io/erland/code-to-xmi-ir-service`
-- `ghcr.io/erland/code-to-xmi-xmi-service`
+Images:
 
-Tags:
+- Gateway (built in this repo): `ghcr.io/erland/code-to-xmi-gateway`
+- IR service (built in `frontend-to-ir` repo): `ghcr.io/erland/code-to-xmi-ir-service`
+- XMI service (built in `java-to-xmi` repo): `ghcr.io/erland/code-to-xmi-xmi-service`
 
-- `snapshot` – latest snapshot build
-- `sha-<7>` – snapshot tied to a specific server commit
-- `vX.Y.Z` and `latest` – release builds (from git tags)
+Tag conventions:
 
-Release builds pin dependency refs via `deps.lock.json`.
+- `snapshot` – latest snapshot build for that image
+- `sha-<7>` – snapshot tied to a specific commit **in that image’s own repository**
+- `vX.Y.Z` / `latest` – official release builds (from git tags)
 
 ### Quick start (no source checkout)
 
 If you just want to run the latest **snapshot** or an **official release** without cloning any repositories, the easiest way is to use the published images.
 
-Create a new folder anywhere on your machine and add a `docker-compose.yml` like this:
+Create a new folder anywhere on your machine and add a `docker-compose.yml` like this (or copy `docker-compose.ghcr.yml` from this repo):
 
 ```yaml
 services:
@@ -150,4 +152,6 @@ Replace `snapshot` with a release tag, e.g. `v1.0.0` (and optionally use `latest
 
 ### Use a specific snapshot build
 
-If you want a snapshot tied to a particular server commit, use the `sha-<7>` tag (same tag across all three images).
+If you want a snapshot tied to a particular commit, use each image’s `sha-<7>` tag.
+
+Because the three images are built from different repositories, their SHA tags are not guaranteed to match.

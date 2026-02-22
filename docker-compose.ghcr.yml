@@ -1,0 +1,17 @@
+services:
+  gateway:
+    image: ghcr.io/erland/code-to-xmi-gateway:snapshot
+    ports:
+      - "8080:8080"
+    environment:
+      IR_SERVICE_URL: http://ir-service:7071
+      XMI_SERVICE_URL: http://xmi-service:7072
+    depends_on:
+      - ir-service
+      - xmi-service
+
+  ir-service:
+    image: ghcr.io/erland/code-to-xmi-ir-service:snapshot
+
+  xmi-service:
+    image: ghcr.io/erland/code-to-xmi-xmi-service:snapshot
