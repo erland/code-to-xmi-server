@@ -1,0 +1,21 @@
+# Release image: includes built frontend-to-ir in /deps/frontend-to-ir
+FROM node:20-bookworm AS frontend_builder
+WORKDIR /deps/frontend-to-ir
+COPY deps/frontend-to-ir/package.json deps/frontend-to-ir/package-lock.json* ./
+RUN npm ci
+COPY deps/frontend-to-ir ./
+RUN npm run build
+
+FROM node:20-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY services/ir-service/package.json services/ir-service/package-lock.json* ./
+RUN npm ci --omit=dev
+COPY services/ir-service/src ./src
+
+# Copy built frontend-to-ir (dist + node_modules)
+COPY --from=frontend_builder /deps/frontend-to-ir /deps/frontend-to-ir
+ENV FRONTEND_TO_IR_CLI=/deps/frontend-to-ir/dist/cli.js
+
+EXPOSE 7071
+CMD ["npm","run","start"]

@@ -86,3 +86,20 @@ Returns XMI.
 - The services create a temp workdir per request and delete it afterward.
 - ZIP extraction protects against zip-slip paths.
 
+
+
+## Snapshot and release images (GHCR)
+
+This repo can publish prebuilt Docker images for the three services to GitHub Container Registry (GHCR):
+
+- `ghcr.io/erland/code-to-xmi-gateway`
+- `ghcr.io/erland/code-to-xmi-ir-service`
+- `ghcr.io/erland/code-to-xmi-xmi-service`
+
+Tags:
+
+- `snapshot` – latest snapshot build
+- `sha-<7>` – snapshot tied to a specific server commit
+- `vX.Y.Z` and `latest` – release builds (from git tags)
+
+Release builds pin dependency refs via `deps.lock.json`.

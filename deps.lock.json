@@ -1,0 +1,10 @@
+{
+  "frontend-to-ir": {
+    "repo": "erland/frontend-to-ir",
+    "ref": "main"
+  },
+  "java-to-xmi": {
+    "repo": "erland/java-to-xmi",
+    "ref": "main"
+  }
+}

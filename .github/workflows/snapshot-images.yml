@@ -1,0 +1,74 @@
+name: Build snapshot images
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+  repository_dispatch:
+    types: [ deps-updated ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - gateway
+          - ir-service
+          - xmi-service
+    steps:
+      - name: Checkout server repo
+        uses: actions/checkout@v4
+
+      - name: Read deps.lock.json
+        id: deps
+        run: |
+          node -e "const fs=require('fs'); const d=JSON.parse(fs.readFileSync('deps.lock.json','utf8'));           console.log('frontend_ref='+(d['frontend-to-ir']?.ref||'main'));           console.log('java_ref='+(d['java-to-xmi']?.ref||'main'));" >> $GITHUB_OUTPUT
+
+      - name: Checkout frontend-to-ir
+        uses: actions/checkout@v4
+        with:
+          repository: erland/frontend-to-ir
+          ref: ${{ steps.deps.outputs.frontend_ref }}
+          path: deps/frontend-to-ir
+
+      - name: Checkout java-to-xmi
+        uses: actions/checkout@v4
+        with:
+          repository: erland/java-to-xmi
+          ref: ${{ steps.deps.outputs.java_ref }}
+          path: deps/java-to-xmi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: tags
+        run: |
+          echo "sha_tag=sha-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          echo "image=ghcr.io/${{ github.repository_owner }}/code-to-xmi-${{ matrix.service }}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/${{ matrix.service }}/Dockerfile.release
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.image }}:snapshot
+            ${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.sha_tag }}
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}

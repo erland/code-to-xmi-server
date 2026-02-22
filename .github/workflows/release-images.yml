@@ -1,0 +1,76 @@
+name: Build release images
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - gateway
+          - ir-service
+          - xmi-service
+    steps:
+      - name: Checkout server repo
+        uses: actions/checkout@v4
+
+      - name: Read deps.lock.json
+        id: deps
+        run: |
+          node -e "const fs=require('fs'); const d=JSON.parse(fs.readFileSync('deps.lock.json','utf8'));           console.log('frontend_repo='+(d['frontend-to-ir']?.repo||'erland/frontend-to-ir'));           console.log('frontend_ref='+(d['frontend-to-ir']?.ref||'main'));           console.log('java_repo='+(d['java-to-xmi']?.repo||'erland/java-to-xmi'));           console.log('java_ref='+(d['java-to-xmi']?.ref||'main'));" >> $GITHUB_OUTPUT
+
+      - name: Checkout frontend-to-ir
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.deps.outputs.frontend_repo }}
+          ref: ${{ steps.deps.outputs.frontend_ref }}
+          path: deps/frontend-to-ir
+
+      - name: Checkout java-to-xmi
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.deps.outputs.java_repo }}
+          ref: ${{ steps.deps.outputs.java_ref }}
+          path: deps/java-to-xmi
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Compute tags
+        id: tags
+        run: |
+          VERSION="${GITHUB_REF_NAME}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "image=ghcr.io/${{ github.repository_owner }}/code-to-xmi-${{ matrix.service }}" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/${{ matrix.service }}/Dockerfile.release
+          push: true
+          tags: |
+            ${{ steps.tags.outputs.image }}:${{ steps.tags.outputs.version }}
+            ${{ steps.tags.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            code_to_xmi.frontend_to_ir.ref=${{ steps.deps.outputs.frontend_ref }}
+            code_to_xmi.java_to_xmi.ref=${{ steps.deps.outputs.java_ref }}

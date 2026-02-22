@@ -1,0 +1,19 @@
+# Release image: includes built java-to-xmi CLI jar in /deps/java-to-xmi/java-to-xmi-cli.jar
+FROM maven:3.9-eclipse-temurin-17 AS java_builder
+WORKDIR /deps/java-to-xmi
+COPY deps/java-to-xmi ./
+RUN mvn -q -DskipTests package
+RUN JAR=$(ls java-to-xmi-cli/target/java-to-xmi-cli-*.jar | head -n 1) &&     cp "$JAR" /tmp/java-to-xmi-cli.jar
+
+FROM node:20-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates openjdk-17-jre-headless && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+COPY services/xmi-service/package.json services/xmi-service/package-lock.json* ./
+RUN npm ci --omit=dev
+COPY services/xmi-service/src ./src
+
+COPY --from=java_builder /tmp/java-to-xmi-cli.jar /deps/java-to-xmi/java-to-xmi-cli.jar
+ENV JAVA_TO_XMI_JAR=/deps/java-to-xmi/java-to-xmi-cli.jar
+
+EXPOSE 7072
+CMD ["npm","run","start"]
