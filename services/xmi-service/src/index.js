@@ -5,17 +5,32 @@ import path from "node:path";
 import { makeWorkdir, unzipSafe, gitClone, execOrThrow, resolveJavaToXmiJar } from "./utils.js";
 
 const app = express();
-const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 300 * 1024 * 1024 } });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    // Allow large uploads (zips and IR JSON files)
+    fileSize: 300 * 1024 * 1024,
+  },
+});
 
 const JAR_ENV = process.env.JAVA_TO_XMI_JAR;
 
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
-app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
+app.post(
+  "/v1/xmi",
+  upload.fields([
+    { name: "inputZip", maxCount: 1 },
+    { name: "irFile", maxCount: 1 },
+  ]),
+  async (req, res) => {
   const wd = await makeWorkdir("xmi");
   try {
     const JAR = await resolveJavaToXmiJar(JAR_ENV);
-    const irJson = req.body.irJson;
+    // IR can be sent either as a text field (irJson) or as a file (irFile).
+    // Using a file avoids multipart field size limits.
+    const irFile = req.files?.irFile?.[0];
+    const irJson = typeof req.body.irJson === "string" ? req.body.irJson : null;
     const language = (req.body.language || "").toLowerCase();
     const repoUrl = req.body.repoUrl;
 
@@ -44,10 +59,14 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
     const exList = Array.isArray(excludes) ? excludes : (typeof excludes === "string" && excludes ? [excludes] : []);
     for (const ex of exList) args.push("--exclude", ex);
 
-    if (irJson && typeof irJson === "string" && irJson.trim().length) {
+    if ((irFile && irFile.buffer?.length) || (irJson && irJson.trim().length)) {
       // IR mode
       const irPath = path.join(wd.root, "model.ir.json");
-      await fs.promises.writeFile(irPath, irJson, "utf-8");
+      if (irFile && irFile.buffer?.length) {
+        await fs.promises.writeFile(irPath, irFile.buffer);
+      } else {
+        await fs.promises.writeFile(irPath, irJson, "utf-8");
+      }
 
       args.push("--ir", irPath);
       args.push("--output", outXmi);
@@ -66,9 +85,9 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
     const sourceDir = path.join(wd.root, "source");
     if (repoUrl) {
       await gitClone(repoUrl, sourceDir);
-    } else if (req.file) {
+    } else if (req.files?.inputZip?.[0]) {
       const zipPath = path.join(wd.root, "input.zip");
-      await fs.promises.writeFile(zipPath, req.file.buffer);
+      await fs.promises.writeFile(zipPath, req.files.inputZip[0].buffer);
       await unzipSafe(zipPath, sourceDir);
     } else {
       return res.status(400).json({ error: "Provide inputZip or repoUrl" });
@@ -85,6 +104,7 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
   } finally {
     await wd.cleanup();
   }
-});
+  }
+);
 
 app.listen(7072, () => console.log("xmi-service listening on :7072"));

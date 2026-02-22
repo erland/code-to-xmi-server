@@ -85,8 +85,13 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
     const irJson = await irResp.text();
 
     // 2) XMI from IR
+    // Send IR as a *file* (not a text field) to avoid multipart field size limits.
     const xmiForm = new FormData();
-    xmiForm.set("irJson", irJson);
+    xmiForm.set(
+      "irFile",
+      new Blob([irJson], { type: "application/json" }),
+      "model.ir.json"
+    );
     for (const [k,v] of pass.entries()) xmiForm.append(k, v);
 
     const xmiResp = await fetch(`${XMI_SERVICE_URL}/v1/xmi`, { method: "POST", body: xmiForm });
