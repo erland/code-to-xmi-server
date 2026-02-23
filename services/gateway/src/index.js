@@ -86,6 +86,8 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
     // 1) IR
     const irForm = new FormData();
     irForm.set("mode", mode);
+    // Forward deps to IR extraction so frontend-to-ir can emit import DEPENDENCY relations
+    if (pass.get("deps") != null) irForm.set("deps", String(pass.get("deps")));
     if (repoUrl) irForm.set("repoUrl", repoUrl);
     if (req.file) irForm.set("inputZip", new Blob([req.file.buffer]), req.file.originalname);
 
