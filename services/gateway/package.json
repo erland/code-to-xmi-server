@@ -2,6 +2,7 @@
   "name": "gateway",
   "private": true,
   "type": "module",
+  "license": "MIT",
   "scripts": {
     "dev": "node --watch --enable-source-maps src/index.js",
     "start": "node src/index.js"

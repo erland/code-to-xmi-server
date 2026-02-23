@@ -157,3 +157,10 @@ Replace `snapshot` with a release tag, e.g. `v1.0.0` (and optionally use `latest
 If you want a snapshot tied to a particular commit, use each image’s `sha-<7>` tag.
 
 Because the three images are built from different repositories, their SHA tags are not guaranteed to match.
+
+
+## License
+
+This project is licensed under the MIT License. See `LICENSE`.
+
+Third‑party license notes are summarized in `THIRD_PARTY_NOTICES.md`.
