@@ -25,7 +25,11 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
   try {
     const language = (req.body.language || "").toLowerCase();
+    const resultFormat = (req.body.resultFormat || "xmi").toLowerCase();
     if (!language) return res.status(400).json({ error: "Missing field: language" });
+    if (resultFormat !== "xmi" && resultFormat !== "ir") {
+      return res.status(400).json({ error: "Invalid field: resultFormat (expected 'xmi' or 'ir')" });
+    }
 
     // Normalize a few legacy UI values to the current java-to-xmi CLI surface.
     // This keeps older frontends / cached pages working.

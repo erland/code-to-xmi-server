@@ -14,7 +14,8 @@
     label { display: block; margin: 10px 0 6px; font-weight: 600; }
     input[type="text"], select { width: 100%; padding: 10px; border-radius: 8px; border: 1px solid rgba(127,127,127,0.35); }
     input[type="file"] { width: 100%; }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+    @media (max-width: 760px){ .row{ grid-template-columns: 1fr; } }
     .actions { display: flex; gap: 10px; align-items: center; margin-top: 10px; }
     button { padding: 10px 14px; border-radius: 10px; border: 1px solid rgba(127,127,127,0.35); cursor: pointer; }
     button.primary { font-weight: 700; }
@@ -24,8 +25,8 @@
   </style>
 </head>
 <body>
-  <h1>Generate UML XMI</h1>
-  <p>Upload a zip or provide a Git repository URL, then download the generated UML XMI.</p>
+  <h1>Generate IR or UML XMI</h1>
+  <p>Upload a zip or provide a Git repository URL, then download either IR (JSON) or UML XMI.</p>
 
   <form id="form">
     <fieldset>
@@ -46,6 +47,15 @@
         <div>
           <label for="name">Model name (optional)</label>
           <input id="name" name="name" type="text" placeholder="MyModel" />
+        </div>
+
+        <div>
+          <label for="resultFormat">Result</label>
+          <select id="resultFormat" name="resultFormat" required>
+            <option value="xmi" selected>XMI (UML)</option>
+            <option value="ir">IR (JSON)</option>
+          </select>
+          <div id="resultHint" class="muted" style="margin-top:6px;"></div>
         </div>
       </div>
 
@@ -106,7 +116,7 @@
     </fieldset>
 
     <div class="actions">
-      <button class="primary" type="submit">Generate XMI</button>
+      <button class="primary" type="submit" id="submitBtn">Generate</button>
       <span id="status" class="muted"></span>
     </div>
 

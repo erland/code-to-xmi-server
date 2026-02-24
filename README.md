@@ -55,6 +55,7 @@ Ports:
 
 - `inputZip` (file) **or** `repoUrl` (string)
 - `language` = `java | ts | js | react | angular`
+- `resultFormat` = `xmi | ir` (default: `xmi`). Note: `ir` is supported for frontend languages; Java IR output is not exposed by xmi-service yet.
 
 Optional pass-through fields (forwarded to java-to-xmi):
 - `name` (UML model name)

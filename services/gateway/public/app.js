@@ -47,6 +47,19 @@ for (const r of form.elements['sourceKind']) {
 
 toggleSourceUI();
 
+
+function syncResultUI() {
+  const rf = form.elements['resultFormat'];
+  const btn = document.getElementById('submitBtn');
+  const resultFormat = rf.value;
+  btn.textContent = resultFormat === 'ir' ? 'Generate IR' : 'Generate XMI';
+}
+
+form.elements['language'].addEventListener('change', syncResultUI);
+form.elements['resultFormat'].addEventListener('change', syncResultUI);
+syncResultUI();
+
+
 form.addEventListener('submit', async (e) => {
   e.preventDefault();
   outEl.innerHTML = '';
@@ -66,6 +79,7 @@ form.addEventListener('submit', async (e) => {
 
   const fd = new FormData();
   fd.set('language', language);
+  fd.set('resultFormat', resultFormat);
   if (name) fd.set('name', name);
   if (associations) fd.set('associations', associations);
   if (deps) fd.set('deps', deps);
@@ -88,7 +102,7 @@ form.addEventListener('submit', async (e) => {
     fd.set('inputZip', file, file.name);
   }
 
-  setStatus('Generating…');
+  setStatus(resultFormat === 'ir' ? 'Generating IR…' : 'Generating XMI…');
   try {
     const resp = await fetch('/v1/xmi', { method: 'POST', body: fd });
     if (!resp.ok) {
@@ -101,7 +115,8 @@ form.addEventListener('submit', async (e) => {
     const blob = await resp.blob();
     const cd = resp.headers.get('content-disposition') || '';
     const m = /filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i.exec(cd);
-    const filename = decodeURIComponent((m && (m[1] || m[2])) || 'model.xmi');
+    const defaultName = resultFormat === 'ir' ? 'model.ir.json' : 'model.xmi';
+    const filename = decodeURIComponent((m && (m[1] || m[2])) || defaultName);
 
     showDownload(blob, filename);
     setStatus('Done.');
