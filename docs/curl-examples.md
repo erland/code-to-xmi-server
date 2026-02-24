@@ -12,6 +12,8 @@ curl -sS -X POST http://localhost:8080/v1/xmi   -F language=react   -F repoUrl=h
 
 ## Convert Java ZIP with extra options
 
+> Note: If you omit `-F deps=...`, the gateway will not send any `deps` value and the underlying services' default will apply (currently `true`).
+
 ```bash
 curl -sS -X POST http://localhost:8080/v1/xmi   -F language=java   -F inputZip=@./java-project.zip   -F associations=smart   -F deps=true   -F nestedTypes=uml+import   -o model.xmi
 ```

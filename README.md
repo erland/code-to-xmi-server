@@ -59,7 +59,7 @@ Ports:
 Optional pass-through fields (forwarded to java-to-xmi):
 - `name` (UML model name)
 - `associations` (`none|jpa|resolved|smart`)
-- `deps` (`true|false`)
+- `deps` (`true|false`) — if omitted, the underlying services' default is used (currently `true`).
 - `nestedTypes` (`uml|uml+import|flatten`)
 - `includeAccessors` (`true|false`)
 - `includeConstructors` (`true|false`)
