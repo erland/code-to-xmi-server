@@ -4,10 +4,13 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 function normalizeResultFormat(v, defaultValue = 'xmi') {
-  const s = (v ?? defaultValue).toString().trim().toLowerCase();
+  // Accept empty/missing values as default; accept common aliases; tolerate odd encodings.
+  const raw = v ?? defaultValue;
+  const s = (raw === undefined || raw === null) ? '' : raw.toString().trim().toLowerCase();
+  if (!s) return defaultValue;
   if (s === 'xmi' || s === 'uml' || s.startsWith('xmi') || s.includes('xmi')) return 'xmi';
   if (s === 'ir' || s.startsWith('ir') || s.includes('ir')) return 'ir';
-  return s; // caller validates
+  return defaultValue;
 }
 
 
@@ -33,7 +36,7 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
   try {
     const language = (req.body.language || "").toLowerCase();
-    const resultFormat = normalizeResultFormat(req.body.resultFormat, 'xmi');
+    const resultFormat = normalizeResultFormat(req.body.resultFormat ?? req.query.resultFormat ?? req.headers['x-result-format'], 'xmi');
     if (!language) return res.status(400).json({ error: "Missing field: language" });
     if (resultFormat !== "xmi" && resultFormat !== "ir") {
       return res.status(400).json({ error: "Invalid field: resultFormat (expected 'xmi' or 'ir')" });

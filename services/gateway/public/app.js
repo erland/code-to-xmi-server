@@ -65,6 +65,7 @@ form.addEventListener('submit', async (e) => {
   outEl.innerHTML = '';
 
   const language = form.elements['language'].value;
+  const resultFormat = form.elements['resultFormat'].value;
   const name = form.elements['name'].value.trim();
   const associations = form.elements['associations'].value;
   const deps = form.elements['deps'].value;
@@ -104,7 +105,11 @@ form.addEventListener('submit', async (e) => {
 
   setStatus(resultFormat === 'ir' ? 'Generating IR…' : 'Generating XMI…');
   try {
-    const resp = await fetch('/v1/xmi', { method: 'POST', body: fd });
+        const resp = await fetch(`/v1/xmi?resultFormat=${encodeURIComponent(resultFormat)}`, {
+      method: 'POST',
+      headers: { 'X-Result-Format': resultFormat },
+      body: fd,
+    });
     if (!resp.ok) {
       const text = await resp.text();
       showError(text);
