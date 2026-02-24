@@ -91,11 +91,20 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
     if (repoUrl) irForm.set("repoUrl", repoUrl);
     if (req.file) irForm.set("inputZip", new Blob([req.file.buffer]), req.file.originalname);
 
-    const irResp = await fetch(`${IR_SERVICE_URL}/v1/ir`, { method: "POST", body: irForm });
+    let irResp = await fetch(`${IR_SERVICE_URL}/v2/ir`, { method: "POST", body: irForm });
+    // Backward compatible fallback if older ir-service doesn't expose /v2/ir yet.
+    if (irResp.status === 404) {
+      irResp = await fetch(`${IR_SERVICE_URL}/v1/ir`, { method: "POST", body: irForm });
+    }
     if (!irResp.ok) {
       const txt = await irResp.text();
       res.status(irResp.status).type("application/json").send(txt);
       return;
+    }
+    const irSchema = (irResp.headers.get('x-ir-schema') || '').toLowerCase();
+    if (irSchema && irSchema !== 'v2') {
+      // Non-fatal: still pass through, but surface a warning header to the caller.
+      res.setHeader('X-Warn-IR-Schema', `expected v2 but got ${irSchema}`);
     }
     const irJson = await irResp.text();
 
