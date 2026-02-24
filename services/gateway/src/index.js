@@ -3,6 +3,14 @@ import multer from "multer";
 import path from "path";
 import { fileURLToPath } from "url";
 
+function normalizeResultFormat(v, defaultValue = 'xmi') {
+  const s = (v ?? defaultValue).toString().trim().toLowerCase();
+  if (s === 'xmi' || s === 'uml' || s.startsWith('xmi') || s.includes('xmi')) return 'xmi';
+  if (s === 'ir' || s.startsWith('ir') || s.includes('ir')) return 'ir';
+  return s; // caller validates
+}
+
+
 const app = express();
 const upload = multer({ limits: { fileSize: 200 * 1024 * 1024 } }); // 200MB
 
@@ -25,7 +33,7 @@ app.get("/health", (_req, res) => res.json({ ok: true }));
 app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
   try {
     const language = (req.body.language || "").toLowerCase();
-    const resultFormat = (req.body.resultFormat || "xmi").toLowerCase();
+    const resultFormat = normalizeResultFormat(req.body.resultFormat, 'xmi');
     if (!language) return res.status(400).json({ error: "Missing field: language" });
     if (resultFormat !== "xmi" && resultFormat !== "ir") {
       return res.status(400).json({ error: "Invalid field: resultFormat (expected 'xmi' or 'ir')" });
