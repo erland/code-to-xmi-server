@@ -77,6 +77,7 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
       // go straight to xmi-service (source mode)
       const form = new FormData();
       form.set("language", "java");
+      form.set("resultFormat", resultFormat);
       if (repoUrl) form.set("repoUrl", repoUrl);
       if (req.file) form.set("inputZip", new Blob([req.file.buffer]), req.file.originalname);
       for (const [k,v] of pass.entries()) form.append(k, v);
@@ -122,6 +123,15 @@ app.post("/v1/xmi", upload.single("inputZip"), async (req, res) => {
       res.setHeader('X-Warn-IR-Schema', `expected v2 but got ${irSchema}`);
     }
     const irJson = await irResp.text();
+
+    // If caller requested IR, return it directly (do NOT convert to XMI).
+    if (resultFormat === "ir") {
+      res.status(200);
+      res.setHeader("content-type", "application/json");
+      res.setHeader("content-disposition", 'attachment; filename="model.ir.json"');
+      res.send(irJson);
+      return;
+    }
 
     // 2) XMI from IR
     // Send IR as a *file* (not a text field) to avoid multipart field size limits.
